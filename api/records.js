@@ -62,6 +62,13 @@ function cleanFilters(filters) {
 function mapColumn(entity, column) {
   if (entity === 'app_roles' && column === 'nom') return 'name';
   if (entity === 'app_roles' && column === 'desc') return 'description';
+
+  // Table forms: le schéma Supabase historique utilise des noms français.
+  // Le front peut manipuler des noms anglais selon les écrans.
+  if (entity === 'forms' && column === 'name') return 'nom';
+  if (entity === 'forms' && column === 'label') return 'nom';
+  if (entity === 'forms' && column === 'color') return 'couleur';
+  if (entity === 'forms' && column === 'active') return 'actif';
   return column;
 }
 
@@ -84,6 +91,7 @@ function buildReadPath(entity, { select='*', filters=[], order='', limit=1000, o
 function normalizeRecord(record, entity = '') {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return {};
   const allowedByEntity = {
+    forms: new Set(['id','nom','description','couleur','actif','modules','fields','created_at','visible_roles','triggers','version','published','tenant_id','environment_code']),
     submissions: new Set(['form_id','values','device','tenant_id','environment_code']),
     app_roles: new Set(['id','tenant_id','environment_code','name','permissions','active','created_at','description','updated_at']),
     environment_license_limits: new Set(['id','environment_code','supervision_limit','pad_limit','lecture_limit','updated_at','tenant_id']),
@@ -101,6 +109,19 @@ function normalizeRecord(record, entity = '') {
   }
   if (entity === 'submissions') {
     if (!out.device) out.device = 'desktop';
+  }
+  if (entity === 'forms') {
+    if ((record.name || record.label) && !out.nom) out.nom = record.name || record.label;
+    if (record.color && !out.couleur) out.couleur = record.color;
+    if (record.active !== undefined && out.actif === undefined) out.actif = !!record.active;
+    if (!out.environment_code) out.environment_code = String(record.environment_code || '').trim() || 'DEMO';
+    if (out.actif === undefined) out.actif = true;
+    if (!Array.isArray(out.modules)) out.modules = Array.isArray(record.modules) ? record.modules : [];
+    if (!out.fields || typeof out.fields !== 'object') out.fields = Array.isArray(record.fields) ? record.fields : [];
+    if (!out.visible_roles || typeof out.visible_roles !== 'object') out.visible_roles = record.visible_roles || [];
+    if (!out.triggers || typeof out.triggers !== 'object') out.triggers = record.triggers || {};
+    if (out.version === undefined) out.version = 1;
+    if (out.published === undefined) out.published = true;
   }
   if (entity === 'app_roles') {
     if (record.nom && !out.name) out.name = record.nom;

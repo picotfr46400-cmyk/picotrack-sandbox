@@ -1,1 +1,5 @@
-{"version":"secured-v5","generated_at":"2026-06-15T11:55:14.802758+00:00","notes":"Fix DB adapter for users/licenses after secure backend refactor"}
+{
+  "version": "secured-v8",
+  "generated_at": "2026-06-15T12:29:15.084093Z",
+  "notes": "forms persistence schema mapping fixed"
+}
