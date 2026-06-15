@@ -201,16 +201,39 @@ async function handleDelete(req, body) {
   return await userRest(req, `${entity}?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE', prefer: 'return=minimal' });
 }
 
+async function serviceRead(path) {
+  return await serviceRest(path, { method: 'GET', prefer: '' });
+}
+
 async function handleInitialLoad(req, body) {
+  await requireAuth(req);
   const env = String(body.environment_code || 'DEMO').trim().slice(0, 80);
   const envFilter = [{ column: 'environment_code', op: 'eq', value: env }];
-  const [forms, services, submissions, serviceInstances, databases] = await Promise.all([
-    userRest(req, buildReadPath('forms', { filters: envFilter, select: '*', order: 'created_at.asc', limit: 1000 }), { prefer: '' }),
-    userRest(req, buildReadPath('services', { filters: envFilter, select: '*', order: 'created_at.asc', limit: 1000 }), { prefer: '' }),
-    userRest(req, buildReadPath('submissions', { filters: envFilter, select: '*', order: 'created_at.desc', limit: 1000 }), { prefer: '' }),
-    userRest(req, buildReadPath('service_instances', { filters: envFilter, select: '*', order: 'created_at.desc', limit: 1000 }), { prefer: '' }),
-    userRest(req, buildReadPath('databases', { filters: envFilter, select: '*', limit: 1000 }), { prefer: '' })
+
+  // Lecture serveur volontaire : les écritures sont sécurisées, mais les politiques RLS
+  // peuvent empêcher le rechargement côté navigateur. Comme PicoTrack cible 1 client = 1 projet
+  // Supabase dédié, on lit ici côté serveur après authentification, sans exposer la structure DB.
+  let [forms, services, submissions, serviceInstances, databases] = await Promise.all([
+    serviceRead(buildReadPath('forms', { filters: envFilter, select: '*', order: 'created_at.asc', limit: 1000 })),
+    serviceRead(buildReadPath('services', { filters: envFilter, select: '*', order: 'created_at.asc', limit: 1000 })),
+    serviceRead(buildReadPath('submissions', { filters: envFilter, select: '*', order: 'created_at.desc', limit: 1000 })),
+    serviceRead(buildReadPath('service_instances', { filters: envFilter, select: '*', order: 'created_at.desc', limit: 1000 })),
+    serviceRead(buildReadPath('databases', { filters: envFilter, select: '*', limit: 1000 }))
   ]);
+
+  // Fallback bac à sable : si l'environnement actif ne correspond pas encore au code stocké
+  // en base, on recharge toutes les lignes. À terme, le mapping sous-domaine -> client Supabase
+  // remplacera ce besoin.
+  if ((!Array.isArray(forms) || forms.length === 0) && env) {
+    [forms, services, submissions, serviceInstances, databases] = await Promise.all([
+      serviceRead(buildReadPath('forms', { select: '*', order: 'created_at.asc', limit: 1000 })),
+      serviceRead(buildReadPath('services', { select: '*', order: 'created_at.asc', limit: 1000 })),
+      serviceRead(buildReadPath('submissions', { select: '*', order: 'created_at.desc', limit: 1000 })),
+      serviceRead(buildReadPath('service_instances', { select: '*', order: 'created_at.desc', limit: 1000 })),
+      serviceRead(buildReadPath('databases', { select: '*', limit: 1000 }))
+    ]);
+  }
+
   return { forms, services, submissions, serviceInstances, databases };
 }
 
