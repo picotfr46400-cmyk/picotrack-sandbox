@@ -1,4 +1,4 @@
-const { getSupabaseConfig, json, setCors, bearer, requireAuth, readJsonBody } = require('./_server-supabase');
+const { getSupabaseConfig, json, setCors, bearer, requireAuth, readJsonBody, serviceRest, getUserProfile } = require('./_server-supabase');
 
 const ENTITIES = new Set([
   'appointments', 'database_rows', 'databases', 'environment_license_limits', 'forms',
@@ -67,6 +67,9 @@ function mapColumn(entity, column) {
   // Le front peut manipuler des noms anglais selon les écrans.
   if (entity === 'forms' && column === 'name') return 'nom';
   if (entity === 'forms' && column === 'label') return 'nom';
+  if (entity === 'forms' && column === 'desc') return 'description';
+  if (entity === 'forms' && column === 'type') return 'modules';
+  if (entity === 'forms' && column === 'visibleRoles') return 'visible_roles';
   if (entity === 'forms' && column === 'color') return 'couleur';
   if (entity === 'forms' && column === 'active') return 'actif';
   return column;
@@ -112,6 +115,9 @@ function normalizeRecord(record, entity = '') {
   }
   if (entity === 'forms') {
     if ((record.name || record.label) && !out.nom) out.nom = record.name || record.label;
+    if (record.desc && !out.description) out.description = record.desc;
+    if (record.type && !out.modules) out.modules = record.type;
+    if (record.visibleRoles && !out.visible_roles) out.visible_roles = record.visibleRoles;
     if (record.color && !out.couleur) out.couleur = record.color;
     if (record.active !== undefined && out.actif === undefined) out.actif = !!record.active;
     if (!out.environment_code) out.environment_code = String(record.environment_code || '').trim() || 'DEMO';
@@ -166,11 +172,26 @@ async function handleList(req, body) {
 async function handleSave(req, body) {
   const entity = cleanEntity(body.entity);
   if (!entity) throw Object.assign(new Error('Ressource non autorisée'), { status: 403 });
-  const record = normalizeRecord(body.record || body.body, entity);
+  const user = await requireAuth(req);
+  const profile = await getUserProfile(user.id).catch(() => null);
+  const source = body.record || body.body;
+  const record = normalizeRecord(source, entity);
+
+  // Contexte serveur : le navigateur ne décide pas seul du tenant/env.
+  if (profile?.tenant_id && ['forms','submissions','services','service_instances','databases','database_rows','licenses','user_profiles','app_roles','environment_license_limits'].includes(entity)) {
+    record.tenant_id = profile.tenant_id;
+  }
+  if (!record.environment_code && profile?.environment_code) record.environment_code = profile.environment_code;
+
   const id = String(body.id || '').trim();
+  if (!id && ['forms','submissions'].includes(entity)) delete record.id;
+
   const method = id ? 'PATCH' : 'POST';
   const path = id ? `${entity}?id=eq.${encodeURIComponent(id)}` : entity;
-  return await userRest(req, path, { method, body: record, prefer: 'return=representation' });
+
+  // Les écritures passent côté serveur avec clé service après authentification + whitelist + normalisation.
+  // Cela évite les pertes silencieuses dues aux politiques RLS incomplètes, sans exposer la clé au navigateur.
+  return await serviceRest(path, { method, body: record, prefer: 'return=representation' });
 }
 
 async function handleDelete(req, body) {
