@@ -83,12 +83,24 @@ function buildReadPath(entity, { select='*', filters=[], order='', limit=1000, o
 
 function normalizeRecord(record, entity = '') {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return {};
+  const allowedByEntity = {
+    submissions: new Set(['form_id','values','device','tenant_id','environment_code']),
+    app_roles: new Set(['id','tenant_id','environment_code','name','permissions','active','created_at','description','updated_at']),
+    environment_license_limits: new Set(['id','environment_code','supervision_limit','pad_limit','lecture_limit','updated_at','tenant_id']),
+    licenses: new Set(['id','environment_code','license_key','license_type','label','active','device_name','last_seen','created_at','email','password_hash','role','scope','roles']),
+    user_profiles: new Set(['id','email','role','environment_code','active','created_at','tenant_id','label','firstname','lastname','license_key','password_hash','roles','scope','updated_at','login_user','first_name','last_name','username','license_type','resolved_permissions'])
+  };
+  const allow = allowedByEntity[entity] || null;
   const out = {};
   for (let [k, v] of Object.entries(record)) {
     if (!COL_ALLOW.test(k)) continue;
     k = mapColumn(entity, k);
     if (entity === 'app_roles' && (k === 'nom' || k === 'desc')) continue;
+    if (allow && !allow.has(k)) continue;
     out[k] = v;
+  }
+  if (entity === 'submissions') {
+    if (!out.device) out.device = 'desktop';
   }
   if (entity === 'app_roles') {
     if (record.nom && !out.name) out.name = record.nom;
