@@ -72,6 +72,25 @@ function mapColumn(entity, column) {
   if (entity === 'forms' && column === 'visibleRoles') return 'visible_roles';
   if (entity === 'forms' && column === 'color') return 'couleur';
   if (entity === 'forms' && column === 'active') return 'actif';
+
+  // Table services : schéma Supabase français + config métier en jsonb.
+  if (entity === 'services' && column === 'name') return 'nom';
+  if (entity === 'services' && column === 'label') return 'nom';
+  if (entity === 'services' && column === 'desc') return 'description';
+  if (entity === 'services' && column === 'color') return 'couleur';
+  if (entity === 'services' && column === 'active') return 'actif';
+  if (entity === 'services' && column === 'formId') return 'form_id';
+  if (entity === 'services' && column === 'idPattern') return 'id_pattern';
+  if (entity === 'services' && column === 'cardConfig') return 'card_config';
+  if (entity === 'services' && column === 'kanbanGroups') return 'kanban_groups';
+
+  // Table service_instances : schéma Supabase snake_case.
+  if (entity === 'service_instances' && column === 'serviceId') return 'service_id';
+  if (entity === 'service_instances' && column === 'formData') return 'form_data';
+  if (entity === 'service_instances' && column === 'currentStatusId') return 'current_status_id';
+  if (entity === 'service_instances' && column === 'assignedTo') return 'assigned_to';
+  if (entity === 'service_instances' && column === 'createdBy') return 'created_by';
+  if (entity === 'service_instances' && column === 'submissionId') return 'submission_id';
   return column;
 }
 
@@ -95,6 +114,8 @@ function normalizeRecord(record, entity = '') {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return {};
   const allowedByEntity = {
     forms: new Set(['id','nom','description','couleur','actif','modules','fields','created_at','visible_roles','triggers','version','published','tenant_id','environment_code']),
+    services: new Set(['id','nom','description','couleur','actif','statuses','actions','created_at','form_id','id_pattern','flux','card_config','kanban_groups','tenant_id','environment_code']),
+    service_instances: new Set(['id','service_id','ref','form_data','status_id','priority','events','device','created_at','updated_at','tenant_id','assigned_to','environment_code','created_by','current_status_id','reference','submission_id']),
     submissions: new Set(['form_id','values','device','tenant_id','environment_code']),
     app_roles: new Set(['id','tenant_id','environment_code','name','permissions','active','created_at','description','updated_at']),
     environment_license_limits: new Set(['id','environment_code','supervision_limit','pad_limit','lecture_limit','updated_at','tenant_id']),
@@ -128,6 +149,35 @@ function normalizeRecord(record, entity = '') {
     if (!out.triggers || typeof out.triggers !== 'object') out.triggers = record.triggers || {};
     if (out.version === undefined) out.version = 1;
     if (out.published === undefined) out.published = true;
+  }
+  if (entity === 'services') {
+    if ((record.name || record.label) && !out.nom) out.nom = record.name || record.label;
+    if (record.desc && !out.description) out.description = record.desc;
+    if (record.color && !out.couleur) out.couleur = record.color;
+    if (record.formId && !out.form_id) out.form_id = record.formId;
+    if (record.idPattern && !out.id_pattern) out.id_pattern = record.idPattern;
+    if (record.cardConfig && !out.card_config) out.card_config = record.cardConfig;
+    if (record.kanbanGroups && !out.kanban_groups) out.kanban_groups = record.kanbanGroups;
+    if (record.active !== undefined && out.actif === undefined) out.actif = !!record.active;
+    if (!out.environment_code) out.environment_code = String(record.environment_code || '').trim() || 'DEMO';
+    if (out.actif === undefined) out.actif = true;
+    if (!Array.isArray(out.statuses)) out.statuses = Array.isArray(record.statuses) ? record.statuses : [];
+    if (!Array.isArray(out.actions)) out.actions = Array.isArray(record.actions) ? record.actions : [];
+    if (!Array.isArray(out.flux)) out.flux = Array.isArray(record.flux) ? record.flux : [];
+    if (!out.card_config || typeof out.card_config !== 'object') out.card_config = record.card_config || record.cardConfig || {};
+    if (!Array.isArray(out.kanban_groups)) out.kanban_groups = Array.isArray(record.kanban_groups) ? record.kanban_groups : (Array.isArray(record.kanbanGroups) ? record.kanbanGroups : []);
+  }
+  if (entity === 'service_instances') {
+    if (record.serviceId && !out.service_id) out.service_id = record.serviceId;
+    if (record.formData && !out.form_data) out.form_data = record.formData;
+    if (record.currentStatusId && !out.current_status_id) out.current_status_id = record.currentStatusId;
+    if (record.assignedTo && !out.assigned_to) out.assigned_to = record.assignedTo;
+    if (record.createdBy && !out.created_by) out.created_by = record.createdBy;
+    if (record.submissionId && !out.submission_id) out.submission_id = record.submissionId;
+    if (!out.environment_code) out.environment_code = String(record.environment_code || '').trim() || 'DEMO';
+    if (!out.device) out.device = 'desktop';
+    if (!out.events || typeof out.events !== 'object') out.events = Array.isArray(record.events) ? record.events : [];
+    if (!out.form_data || typeof out.form_data !== 'object') out.form_data = record.form_data || record.formData || {};
   }
   if (entity === 'app_roles') {
     if (record.nom && !out.name) out.name = record.nom;
@@ -184,7 +234,7 @@ async function handleSave(req, body) {
   if (!record.environment_code && profile?.environment_code) record.environment_code = profile.environment_code;
 
   const id = String(body.id || '').trim();
-  if (!id && ['forms','submissions'].includes(entity)) delete record.id;
+  if (!id && ['forms','submissions','services','service_instances'].includes(entity)) delete record.id;
 
   const method = id ? 'PATCH' : 'POST';
   const path = id ? `${entity}?id=eq.${encodeURIComponent(id)}` : entity;

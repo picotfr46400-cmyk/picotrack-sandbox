@@ -1,5 +1,5 @@
 {
-  "version": "secured-v8",
-  "generated_at": "2026-06-15T12:29:15.084093Z",
-  "notes": "forms persistence schema mapping fixed"
+  "version": "secured-v12",
+  "generated_at": "2026-06-15T13:05:00Z",
+  "notes": "services persistence and reload schema mapping fixed"
 }
