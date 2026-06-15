@@ -1,5 +1,6 @@
 {
-  "version": "secured-v12",
-  "generated_at": "2026-06-15T13:05:00Z",
-  "notes": "services persistence and reload schema mapping fixed"
+  "version": "secured-v13",
+  "generated_at": "2026-06-15T13:53:18Z",
+  "notes": "services persistence and reload schema mapping fixed",
+  "security_headers": true
 }
