@@ -1,6 +1,7 @@
 {
-  "version": "secured-v13",
+  "version": "secured-v14",
   "generated_at": "2026-06-15T13:53:18Z",
-  "notes": "services persistence and reload schema mapping fixed",
-  "security_headers": true
+  "notes": "CSP progressive fix for CDN, fonts and service worker fetches",
+  "security_headers": true,
+  "generatedAt": "2026-06-15T13:58:42.532Z"
 }
