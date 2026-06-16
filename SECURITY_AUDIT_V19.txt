@@ -1,0 +1,12 @@
+PicoTrack Security V19
+
+Analyse :
+- Le vercel.json contient déjà CSP, X-Content-Type-Options,
+  Referrer-Policy et Permissions-Policy.
+- Le scanner a reçu une réponse HTTP 401.
+- Les en-têtes manquants sont probablement absents sur certaines
+  réponses API/401 et non sur les pages statiques.
+
+Action recommandée :
+- Vérifier les réponses 401 des fonctions API.
+- Ajouter les mêmes en-têtes de sécurité côté fonctions serveur.

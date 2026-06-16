@@ -1,9 +1,5 @@
 {
-  "version": "v17",
-  "generated_at": "2026-06-16T14:20:00Z",
-  "notes": "Manifest PWA chargé avec credentials pour compatibilité Vercel Deployment Protection/SSO; bundle app.secured-v17.js.",
-  "security_headers": true,
-  "generatedAt": "2026-06-15T13:58:42.532Z",
-  "securityRefactor": "secure-pwa-manifest-headers",
-  "security_refactor": "V17"
+  "version": "v18",
+  "generated_at": "2026-06-16T20:57:46.624627Z",
+  "focus": "license-save-tenants-schema-fix"
 }
