@@ -1,5 +1,11 @@
 {
-  "version": "v18",
-  "generated_at": "2026-06-16T20:57:46.624627Z",
-  "focus": "license-save-tenants-schema-fix"
+  "version": "v19-security-api-headers-bundle-clean",
+  "date": "2026-06-16",
+  "changes": [
+    "security headers added at API helper level",
+    "explicit API headers in vercel.json",
+    "removed previous obsolete frontend bundles",
+    "index loads app.secured-v19.js",
+    "removed unsafe-eval from CSP"
+  ]
 }
