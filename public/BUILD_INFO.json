@@ -1,7 +1,8 @@
 {
-  "version": "secured-v14",
+  "version": "v16",
   "generated_at": "2026-06-15T13:53:18Z",
   "notes": "CSP progressive fix for CDN, fonts and service worker fetches",
   "security_headers": true,
-  "generatedAt": "2026-06-15T13:58:42.532Z"
+  "generatedAt": "2026-06-15T13:58:42.532Z",
+  "securityRefactor": "secure-pwa-manifest-headers"
 }
